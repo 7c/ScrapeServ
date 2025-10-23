@@ -100,26 +100,37 @@ def url_is_safe(url: str, allowed_schemes=None) -> bool:
     parsed = urlparse(url.strip())
     scheme = parsed.scheme.lower()
     netloc = parsed.netloc.split(':')[0]  # extract host portion w/o port
+    
+    print(f"[SECURITY CHECK] Validating URL: {url}", file=sys.stderr)
+    print(f"[SECURITY CHECK] Parsed - scheme: {scheme}, netloc: {netloc}", file=sys.stderr)
+    
     if scheme not in allowed_schemes:
-        print(f"URL blocked: scheme '{scheme}' is not allowed.", file=sys.stderr)
+        print(f"[SECURITY CHECK] ❌ BLOCKED: scheme '{scheme}' is not allowed (allowed: {', '.join(allowed_schemes)})", file=sys.stderr)
         return False
+    
+    print(f"[SECURITY CHECK] ✓ Scheme '{scheme}' is allowed", file=sys.stderr)
 
     try:
         # Resolve the domain name to IP addresses
         # This can raise socket.gaierror if domain does not exist
+        print(f"[SECURITY CHECK] Resolving domain: {netloc}", file=sys.stderr)
         addrs = socket.getaddrinfo(netloc, None)
-    except socket.gaierror:
-        print(f"URL blocked: cannot resolve domain {netloc}", file=sys.stderr)
+        print(f"[SECURITY CHECK] ✓ Domain resolved to {len(addrs)} address(es)", file=sys.stderr)
+    except socket.gaierror as e:
+        print(f"[SECURITY CHECK] ❌ BLOCKED: cannot resolve domain {netloc} - {e}", file=sys.stderr)
         return False
 
     # Check each resolved address
-    for addrinfo in addrs:
+    for i, addrinfo in enumerate(addrs):
         ip_str = addrinfo[4][0]
+        print(f"[SECURITY CHECK] Checking IP #{i+1}: {ip_str}", file=sys.stderr)
         if is_private_ip(ip_str):
-            print(f"URL blocked: IP {ip_str} for domain {netloc} is private/loopback/link-local.", file=sys.stderr)
+            print(f"[SECURITY CHECK] ❌ BLOCKED: IP {ip_str} for domain {netloc} is private/loopback/reserved/link-local/multicast", file=sys.stderr)
             return False
+        print(f"[SECURITY CHECK] ✓ IP {ip_str} is public", file=sys.stderr)
 
     # If all resolved IPs appear safe, pass it
+    print(f"[SECURITY CHECK] ✓ All checks passed for {netloc}", file=sys.stderr)
     return True
 
 
@@ -134,41 +145,81 @@ def get_ext_from_content_type(content_type: str):
 
 @app.route('/scrape', methods=('POST',))
 def scrape():
+    # Log incoming request
+    print("=" * 80, file=sys.stderr)
+    print(f"[REQUEST] New scrape request from {request.remote_addr}", file=sys.stderr)
+    print(f"[REQUEST] Time: {__import__('datetime').datetime.now().isoformat()}", file=sys.stderr)
+    
     if len(SCRAPER_API_KEYS):
         auth_header = request.headers.get('Authorization')
         if auth_header is None:
+            print(f"[AUTH] ❌ Authorization header missing", file=sys.stderr)
+            print("=" * 80, file=sys.stderr)
+            sys.stderr.flush()
             return jsonify({"error": "Authorization header is missing"}), 401
 
         if not auth_header.startswith('Bearer '):
+            print(f"[AUTH] ❌ Invalid authorization header format", file=sys.stderr)
+            print("=" * 80, file=sys.stderr)
+            sys.stderr.flush()
             return jsonify({"error": "Invalid authorization header format"}), 401
 
         user_key = auth_header.split(' ')[1]
         if user_key not in SCRAPER_API_KEYS:
+            print(f"[AUTH] ❌ Invalid API key provided", file=sys.stderr)
+            print("=" * 80, file=sys.stderr)
+            sys.stderr.flush()
             return jsonify({'error': 'Invalid API key'}), 401
+        
+        print(f"[AUTH] ✓ Valid API key", file=sys.stderr)
+    else:
+        print(f"[AUTH] No API keys configured (public mode)", file=sys.stderr)
 
     url = request.json.get('url')
 
     if not url:
+        print(f"[ERROR] ❌ No URL provided in request", file=sys.stderr)
+        print("=" * 80, file=sys.stderr)
+        sys.stderr.flush()
         return jsonify({'error': 'No URL provided'}), 400
+    
+    print(f"[URL] Requested URL: {url}", file=sys.stderr)
+    
     if not url_is_safe(url):
+        print(f"[SECURITY] ❌ URL rejected as unsafe: {url}", file=sys.stderr)
+        print("=" * 80, file=sys.stderr)
+        sys.stderr.flush()
         return jsonify({'error': 'URL was judged to be unsafe'}), 400
+    
+    print(f"[SECURITY] ✓ URL passed safety checks", file=sys.stderr)
 
     wait = request.json.get('wait', DEFAULT_WAIT)
     n_screenshots = request.json.get('max_screenshots', DEFAULT_SCREENSHOTS)
     browser_dim = request.json.get('browser_dim', DEFAULT_BROWSER_DIM)
 
+    print(f"[PARAMS] wait={wait}ms, max_screenshots={n_screenshots}, browser_dim={browser_dim[0]}x{browser_dim[1]}", file=sys.stderr)
+
     if wait < 0 or wait > MAX_WAIT:
+        print(f"[VALIDATION] ❌ Invalid wait value: {wait} (must be 0-{MAX_WAIT})", file=sys.stderr)
+        print("=" * 80, file=sys.stderr)
+        sys.stderr.flush()
         return jsonify({
             'error': f'Value {wait} for "wait" is unacceptable; must be between 0 and {MAX_WAIT}'
         }), 400
     
     for i, name in enumerate(['width', 'height']):
         if browser_dim[i] > MAX_BROWSER_DIM[i] or browser_dim[i] < MIN_BROWSER_DIM[i]:
+            print(f"[VALIDATION] ❌ Invalid browser {name}: {browser_dim[i]} (must be {MIN_BROWSER_DIM[i]}-{MAX_BROWSER_DIM[i]})", file=sys.stderr)
+            print("=" * 80, file=sys.stderr)
+            sys.stderr.flush()
             return jsonify({
                 'error': f'Value {browser_dim[i]} for browser {name} is unacceptable; must be between {MIN_BROWSER_DIM[i]} and {MAX_BROWSER_DIM[i]}'
             }), 400
         
     if n_screenshots > MAX_SCREENSHOTS:
+        print(f"[VALIDATION] ❌ Invalid max_screenshots: {n_screenshots} (must be ≤{MAX_SCREENSHOTS})", file=sys.stderr)
+        print("=" * 80, file=sys.stderr)
+        sys.stderr.flush()
         return jsonify({
                 'error': f'Value {n_screenshots} for max_screenshots is unacceptable; must be below {MAX_SCREENSHOTS}'
             }), 400
@@ -186,20 +237,31 @@ def scrape():
     image_format = accepted_formats.get(accept_header)
     if not image_format:
         accepted_formats_list = ', '.join(accepted_formats.keys())
+        print(f"[VALIDATION] ❌ Unsupported image format: {accept_header}", file=sys.stderr)
+        print("=" * 80, file=sys.stderr)
+        sys.stderr.flush()
         return jsonify({
             'error': f'Unsupported image format in Accept header ({accept_header}). Supported Accept header values are: {accepted_formats_list}'
         }), 406
+    
+    print(f"[FORMAT] Image format: {image_format}", file=sys.stderr)
 
     content_file = None
     try:
+        print(f"[SCRAPING] Starting scrape task for: {url}", file=sys.stderr)
+        sys.stderr.flush()
+        
         status, headers, content_file, screenshot_files, metadata = scrape_task.apply_async(
             args=[url, wait, image_format, n_screenshots, browser_dim], kwargs={}
         ).get(timeout=60)  # 60 seconds
         headers = {str(k).lower(): v for k, v in headers.items()}  # make headers all lowercase (they're case insensitive)
+        
+        print(f"[SCRAPING] ✓ Scrape completed successfully", file=sys.stderr)
+        print(f"[RESULT] Status: {status}, Screenshots: {len(screenshot_files)}, Content-Type: {headers.get('content-type', 'unknown')}", file=sys.stderr)
     except Exception as e:
         # If scrape_in_child uses too much memory, it seems to end up here.
         # however, if exit(0) is called, I find it doesn't.
-        print(f"Exception raised from scraping process: {e}", file=sys.stderr, flush=True)
+        print(f"[SCRAPING] ❌ Exception raised from scraping process: {e}", file=sys.stderr, flush=True)
 
     successful = True if content_file else False
 
@@ -247,9 +309,17 @@ def scrape():
             # Final boundary
             yield f"\r\n--{boundary}--\r\n".encode()
 
+        print(f"[RESPONSE] ✓ Sending multipart response with {len(screenshot_files)} screenshots", file=sys.stderr)
+        print("=" * 80, file=sys.stderr)
+        sys.stderr.flush()
+        
         return stream(), 200, {'Content-Type': f'multipart/mixed; boundary={boundary}'}
 
     else:
+        print(f"[RESPONSE] ❌ Request failed - returning error response", file=sys.stderr)
+        print("=" * 80, file=sys.stderr)
+        sys.stderr.flush()
+        
         return jsonify({
             'error': "This is a generic error message; sorry about that."
         }), 500
