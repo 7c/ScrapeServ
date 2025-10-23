@@ -139,8 +139,8 @@ def scrape_task(url, wait, image_format, n_screenshots, browser_dim):
                 headers = dict(response.headers)
                 content_type = headers.get("content-type", "").lower()
 
-                # If this is an HTML page, take screenshots
-                if "text/html" in content_type:
+                # If this is an HTML page or plain text, take screenshots
+                if "text/html" in content_type or "text/plain" in content_type:
                     page.wait_for_timeout(wait)
 
                     # Get total page height
