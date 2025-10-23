@@ -11,8 +11,8 @@ services:
       - 5006:5006
     environment:
       # Memory and Concurrency
-      - MEM_LIMIT_MB=2000
-      - MAX_CONCURRENT_TASKS=5
+      - MEM_LIMIT_MB=4000
+      - MAX_CONCURRENT_TASKS=3
       
       # Screenshot Settings
       - DEFAULT_SCREENSHOTS=1
