@@ -7,18 +7,27 @@ import os
 from PIL import Image
 import sys
 
-# Server options
-MEM_LIMIT_MB = 4_000  # 4 GB memory threshold for child scraping process
-MAX_CONCURRENT_TASKS = 3
-DEFAULT_SCREENSHOTS = 5  # The max number of screenshots if the user doesn't set a max
-MAX_SCREENSHOTS = 10  # User cannot set max_screenshots above this value
-DEFAULT_WAIT = 1000  # Value for wait if a user doesn't set one (ms)
-MAX_WAIT = 5000  # A user cannot ask for more than this long of a wait (ms)
-SCREENSHOT_QUALITY = 85  # Argument to PIL image save
-DEFAULT_BROWSER_DIM = [1280, 2000]  # If a user doesn't set browser dimensions  Width x Height in pixels
-MAX_BROWSER_DIM = [2400, 4000]  # Maximum width and height a user can set
-MIN_BROWSER_DIM = [100, 100]  # Minimum width and height a user can set
-USER_AGENT = "Mozilla/5.0 (compatible; Abbey/1.0; +https://github.com/US-Artificial-Intelligence/scraper)"
+# Server options - configurable via environment variables
+MEM_LIMIT_MB = int(os.environ.get('MEM_LIMIT_MB', 4_000))  # 4 GB memory threshold for child scraping process
+MAX_CONCURRENT_TASKS = int(os.environ.get('MAX_CONCURRENT_TASKS', 3))
+DEFAULT_SCREENSHOTS = int(os.environ.get('DEFAULT_SCREENSHOTS', 5))  # The max number of screenshots if the user doesn't set a max
+MAX_SCREENSHOTS = int(os.environ.get('MAX_SCREENSHOTS', 10))  # User cannot set max_screenshots above this value
+DEFAULT_WAIT = int(os.environ.get('DEFAULT_WAIT', 1000))  # Value for wait if a user doesn't set one (ms)
+MAX_WAIT = int(os.environ.get('MAX_WAIT', 5000))  # A user cannot ask for more than this long of a wait (ms)
+SCREENSHOT_QUALITY = int(os.environ.get('SCREENSHOT_QUALITY', 85))  # Argument to PIL image save
+DEFAULT_BROWSER_DIM = [
+    int(os.environ.get('DEFAULT_BROWSER_WIDTH', 1280)),
+    int(os.environ.get('DEFAULT_BROWSER_HEIGHT', 2000))
+]  # If a user doesn't set browser dimensions  Width x Height in pixels
+MAX_BROWSER_DIM = [
+    int(os.environ.get('MAX_BROWSER_WIDTH', 2400)),
+    int(os.environ.get('MAX_BROWSER_HEIGHT', 4000))
+]  # Maximum width and height a user can set
+MIN_BROWSER_DIM = [
+    int(os.environ.get('MIN_BROWSER_WIDTH', 100)),
+    int(os.environ.get('MIN_BROWSER_HEIGHT', 100))
+]  # Minimum width and height a user can set
+USER_AGENT = os.environ.get('USER_AGENT', "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36")
 
 CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
 CELERY_BROKER_URL = "redis://localhost:6379/0"

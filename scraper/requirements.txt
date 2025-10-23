@@ -6,3 +6,4 @@ celery
 gevent
 redis
 pillow
+dotenv

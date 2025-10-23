@@ -6,7 +6,20 @@ import ipaddress
 import socket
 from urllib.parse import urlparse
 import os
-from worker import scrape_task, MAX_BROWSER_DIM, MIN_BROWSER_DIM, DEFAULT_BROWSER_DIM, DEFAULT_WAIT, MAX_SCREENSHOTS, MAX_WAIT, DEFAULT_SCREENSHOTS
+from worker import (
+    scrape_task, 
+    MAX_BROWSER_DIM, 
+    MIN_BROWSER_DIM, 
+    DEFAULT_BROWSER_DIM, 
+    DEFAULT_WAIT, 
+    MAX_SCREENSHOTS, 
+    MAX_WAIT, 
+    DEFAULT_SCREENSHOTS,
+    MEM_LIMIT_MB,
+    MAX_CONCURRENT_TASKS,
+    SCREENSHOT_QUALITY,
+    USER_AGENT
+)
 import json
 import mimetypes
 
@@ -28,6 +41,31 @@ The scrape workers' memory usage and number are limited by constants set in work
 # For optional API key
 load_dotenv()  # Load in API keys
 SCRAPER_API_KEYS = [value for key, value in os.environ.items() if key.startswith('SCRAPER_API_KEY')]
+
+
+# Print server options on startup
+def print_server_options():
+    print("=" * 60, file=sys.stderr)
+    print("ScrapeServ - Server Options", file=sys.stderr)
+    print("=" * 60, file=sys.stderr)
+    print(f"MEM_LIMIT_MB:           {MEM_LIMIT_MB}", file=sys.stderr)
+    print(f"MAX_CONCURRENT_TASKS:   {MAX_CONCURRENT_TASKS}", file=sys.stderr)
+    print(f"DEFAULT_SCREENSHOTS:    {DEFAULT_SCREENSHOTS}", file=sys.stderr)
+    print(f"MAX_SCREENSHOTS:        {MAX_SCREENSHOTS}", file=sys.stderr)
+    print(f"DEFAULT_WAIT:           {DEFAULT_WAIT} ms", file=sys.stderr)
+    print(f"MAX_WAIT:               {MAX_WAIT} ms", file=sys.stderr)
+    print(f"SCREENSHOT_QUALITY:     {SCREENSHOT_QUALITY}", file=sys.stderr)
+    print(f"DEFAULT_BROWSER_DIM:    {DEFAULT_BROWSER_DIM[0]}x{DEFAULT_BROWSER_DIM[1]} (W x H)", file=sys.stderr)
+    print(f"MAX_BROWSER_DIM:        {MAX_BROWSER_DIM[0]}x{MAX_BROWSER_DIM[1]} (W x H)", file=sys.stderr)
+    print(f"MIN_BROWSER_DIM:        {MIN_BROWSER_DIM[0]}x{MIN_BROWSER_DIM[1]} (W x H)", file=sys.stderr)
+    print(f"USER_AGENT:             {USER_AGENT}", file=sys.stderr)
+    print(f"API Keys configured:    {len(SCRAPER_API_KEYS)}", file=sys.stderr)
+    print("=" * 60, file=sys.stderr)
+    sys.stderr.flush()
+
+
+# Print options when the module is loaded
+print_server_options()
 
 
 @app.route('/')

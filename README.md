@@ -8,6 +8,8 @@ You run the API as a web server on your machine, you send it a URL, and you get 
 </div>
 <br/>
 
+> **Note:** This is a fork of the original [ScrapeServ](https://github.com/US-Artificial-Intelligence/scraper) project. See [Changes in This Fork](#changes-in-this-fork) for modifications made on top of the original.
+
 This project was made to support [Abbey](https://github.com/goodreasonai/abbey), an AI platform. Its author is [Gordon Kamer](https://x.com/gkamer8). Please leave a star if you like the project!
 
 Some highlights:
@@ -129,18 +131,52 @@ API keys are sent to the service using the [Authorization Bearer](https://swagge
 
 ## Other Configuration
 
-You can control memory limits and other variables at the top of `scraper/worker.py` (provided you're building from source). Here are the defaults:
+All server options can be configured via environment variables. You can set them in a `.env` file in the `/scraper` folder or pass them directly to the Docker container. When the server starts, it will print all active configuration values to the console.
 
+Here are the available configuration options with their defaults:
+
+| Environment Variable | Default | Description |
+|---------------------|---------|-------------|
+| `MEM_LIMIT_MB` | `4000` | Memory threshold for child scraping process (MB) |
+| `MAX_CONCURRENT_TASKS` | `3` | Maximum number of concurrent scraping tasks |
+| `DEFAULT_SCREENSHOTS` | `5` | Default max number of screenshots if user doesn't specify |
+| `MAX_SCREENSHOTS` | `10` | Maximum screenshots a user can request |
+| `DEFAULT_WAIT` | `1000` | Default wait time after scrolling (ms) |
+| `MAX_WAIT` | `5000` | Maximum wait time a user can request (ms) |
+| `SCREENSHOT_QUALITY` | `85` | JPEG quality for screenshot compression (0-100) |
+| `DEFAULT_BROWSER_WIDTH` | `1280` | Default browser viewport width (pixels) |
+| `DEFAULT_BROWSER_HEIGHT` | `2000` | Default browser viewport height (pixels) |
+| `MAX_BROWSER_WIDTH` | `2400` | Maximum browser viewport width (pixels) |
+| `MAX_BROWSER_HEIGHT` | `4000` | Maximum browser viewport height (pixels) |
+| `MIN_BROWSER_WIDTH` | `100` | Minimum browser viewport width (pixels) |
+| `MIN_BROWSER_HEIGHT` | `100` | Minimum browser viewport height (pixels) |
+| `USER_AGENT` | Chrome user agent | Custom user agent string for browser |
+
+Example `.env` file:
+
+```bash
+# Server Configuration
+MEM_LIMIT_MB=8000
+MAX_CONCURRENT_TASKS=5
+DEFAULT_SCREENSHOTS=10
+MAX_SCREENSHOTS=20
+
+# API Keys
+SCRAPER_API_KEY=your-secret-key-here
 ```
-MEM_LIMIT_MB = 4_000  # 4 GB memory threshold for child scraping process
-MAX_CONCURRENT_TASKS = 3
-DEFAULT_SCREENSHOTS = 5  # The max number of screenshots if the user doesn't set a max
-MAX_SCREENSHOTS = 10  # User cannot set max_screenshots above this value
-DEFAULT_WAIT = 1000  # Value for wait if a user doesn't set one (ms)
-MAX_WAIT = 5000  # A user cannot ask for more than this long of a wait (ms)
-SCREENSHOT_QUALITY = 85  # Argument to PIL image save
-DEFAULT_BROWSER_DIM = [1280, 2000]  # If a user doesn't set browser dimensions  Width x Height in pixels
-MAX_BROWSER_DIM = [2400, 4000]  # Maximum width and height a user can set
-MIN_BROWSER_DIM = [100, 100]  # Minimum width and height a user can set
-USER_AGENT = "Mozilla/5.0 (compatible; Abbey/1.0; +https://github.com/US-Artificial-Intelligence/scraper)"
-```
+
+## Changes in This Fork
+
+This fork adds the following enhancements to the original ScrapeServ project:
+
+### Environment Variable Configuration
+All server options (memory limits, concurrent tasks, screenshot settings, browser dimensions, etc.) are now configurable via environment variables instead of requiring code changes. This makes it much easier to:
+- Customize settings without rebuilding the Docker image
+- Use different configurations for different deployments
+- Adjust settings on the fly using Docker Compose or Kubernetes
+
+### Startup Configuration Display
+The server now prints all active configuration values to the console when it starts up, making it easy to verify your settings and debug configuration issues.
+
+### User Agent Update
+The default user agent has been updated to a modern Chrome user agent string for better compatibility with websites.
