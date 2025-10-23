@@ -1,5 +1,6 @@
 services:
   scrapeserv:
+    container_name: scrapeserv
     build:
       context: .
       dockerfile: scraper/Dockerfile
@@ -8,3 +9,31 @@ services:
       - ./scraper/supervisord.conf:/etc/supervisor/conf.d/supervisord.conf
     ports:
       - 5006:5006
+    environment:
+      # Memory and Concurrency
+      - MEM_LIMIT_MB=2000
+      - MAX_CONCURRENT_TASKS=5
+      
+      # Screenshot Settings
+      - DEFAULT_SCREENSHOTS=1
+      - MAX_SCREENSHOTS=5
+      - SCREENSHOT_QUALITY=40
+      
+      # Timing Settings
+      - DEFAULT_WAIT=1000
+      - MAX_WAIT=5000
+      
+      # Browser Dimensions - Default
+      - DEFAULT_BROWSER_WIDTH=1280
+      - DEFAULT_BROWSER_HEIGHT=2000
+      
+      # Browser Dimensions - Maximum
+      - MAX_BROWSER_WIDTH=2400
+      - MAX_BROWSER_HEIGHT=4000
+      
+      # Browser Dimensions - Minimum
+      - MIN_BROWSER_WIDTH=100
+      - MIN_BROWSER_HEIGHT=100
+      
+      # User Agent
+      - USER_AGENT=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36
