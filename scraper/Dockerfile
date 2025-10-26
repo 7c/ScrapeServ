@@ -14,6 +14,7 @@ RUN apt-get update && \
     curl \
     gnupg2 \
     supervisor \
+    cron \
     && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -37,5 +38,10 @@ COPY scraper /app
 EXPOSE 5006
 
 COPY scraper/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Set up cron job to clean up old temporary files every hour
+RUN echo '0 * * * * root find /tmp -type f -name "tmp*" -mmin +5 -delete' > /etc/cron.d/cleanup-tmp && \
+    chmod 0644 /etc/cron.d/cleanup-tmp && \
+    crontab /etc/cron.d/cleanup-tmp
 
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
